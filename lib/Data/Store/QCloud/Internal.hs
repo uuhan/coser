@@ -1,4 +1,4 @@
-module Com.YS.Store.QCloud.Internal
+module Data.Store.QCloud.Internal
     (FileInfo(..), Resp(..))
   where
 

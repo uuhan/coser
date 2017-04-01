@@ -1,32 +1,38 @@
-{-# LANGUAGE TypeFamilies #-}
-module Com.YS.Store
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies    #-}
+module Data.Store.QCloud.FuseOps
+    (qcloudFSOps)
   where
 
-import qualified Data.ByteString.Char8 as B
+import           Data.Aeson
+import qualified Data.ByteString.Char8      as B
+import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.String
 import           Foreign.C.Error
+import           Network.Curl
 import           System.Fuse
 import           System.Posix.Files
 import           System.Posix.Types
 
-import           Network.Curl          as C
+import           Data.Store.QCloud.Internal (FileInfo (..), Resp (..))
 
 type HT = ()
 
-helloFSOps :: FuseOperations HT
-helloFSOps = defaultFuseOps { fuseGetFileStat        = getFileStatOp
-                            , fuseOpen               = openOp
-                            , fuseRead               = readOp -- ref @ openOp
-                            , fuseOpenDirectory      = openDirOp
-                            , fuseReadDirectory      = readDirOp
-                            , fuseGetFileSystemStats = getFileSystemStatsOp
-                            }
+qcloudFSOps :: String -> String -> String -> String -> FuseOperations HT
+qcloudFSOps app_id bucket version sig =
+    defaultFuseOps { fuseGetFileStat        = getFileStatOp sig op_url
+                   , fuseOpen               = openOp
+                   , fuseRead               = readOp sig dw_url -- ref @ openOp
+                   , fuseOpenDirectory      = openDirOp
+                   , fuseReadDirectory      = readDirOp
+                   , fuseGetFileSystemStats = getFileSystemStatsOp
+                   }
+  where
+    op_url = "http://sh.file.myqcloud.com/files/" ++ version ++ "/" ++ app_id ++ "/" ++ bucket ++ "/fuse"
+    dw_url = "http://" ++ bucket ++ "-" ++ app_id ++ ".cossh.myqcloud.com/fuse"
 
-helloString :: B.ByteString
-helloString = B.pack "Hello World, HFuse!\n"
-
-helloPath :: FilePath
-helloPath = "/local"
+qcloudString :: B.ByteString
+qcloudString = B.pack "Hello World, HFuse!\n"
 
 testPath :: FilePath
 testPath = "/test.txt"
@@ -63,27 +69,29 @@ fileStat ctx = FileStat { statEntryType = RegularFile
                         , statFileOwner = fuseCtxUserID ctx
                         , statFileGroup = fuseCtxGroupID ctx
                         , statSpecialDeviceID = 0
-                        , statFileSize = fromIntegral $ B.length helloString
+                        , statFileSize = fromIntegral $ B.length qcloudString
                         , statBlocks = 1
                         , statAccessTime = 0
                         , statModificationTime = 0
                         , statStatusChangeTime = 0
                         }
 
-getFileStatOp :: FilePath -> IO (Either Errno FileStat)
-getFileStatOp "/" = do
+getFileStatOp :: String -> String -> FilePath -> IO (Either Errno FileStat)
+getFileStatOp sig url "/" = do
     ctx <- getFuseContext
     return $ Right $ dirStat ctx
 
-getFileStatOp path | path == helloPath = do
+getFileStatOp sig url path | path == testPath = do
     ctx <- getFuseContext
-    return $ Right $ fileStat ctx
+    (_, s) <- curlGetString (url ++ testPath ++ "?op=stat") [CurlVerbose True, CurlHttpHeaders ["Authorization: " ++ sig]]
+    case decode (BL.pack s) :: Maybe Resp of
+        Just Resp{..} -> do
+            return $ Right $ fileStat ctx
+        Nothing -> do
+            putStrLn s
+            return $ Left eNOENT
 
-getFileStatOp path | path == testPath = do
-    ctx <- getFuseContext
-    return $ Right $ fileStat ctx
-
-getFileStatOp _ =
+getFileStatOp _ _ _ =
     return $ Left eNOENT
 
 openDirOp :: (Monad m, Data.String.IsString a, Eq a) => a -> m Errno
@@ -95,34 +103,26 @@ readDirOp "/" = do
     ctx <- getFuseContext
     return $ Right [(".",          dirStat  ctx)
                    ,("..",         dirStat  ctx)
-                   ,(helloName,    fileStat ctx)
-                   ,(testName,    fileStat ctx)
+                   ,(testName,     fileStat ctx)
                    ]
     where
-      (_:helloName) = helloPath
       (_:testName) = testPath
 readDirOp _ = return (Left (eNOENT))
 
 openOp :: FilePath -> OpenMode -> OpenFileFlags -> IO (Either Errno HT)
 openOp path mode _ -- flags
-    | path == helloPath = case mode of
-                            ReadOnly -> return (Right ())
-                            _        -> return (Left eACCES)
     | path == testPath = case mode of
                             ReadOnly -> return (Right ())
                             _        -> return (Left eACCES)
-    | otherwise         = return (Left eNOENT)
+    | otherwise = return (Left eNOENT)
 
 
-readOp :: FilePath -> HT -> ByteCount -> FileOffset -> IO (Either Errno B.ByteString)
-readOp path _ byteCount offset
+readOp :: String -> String -> FilePath -> HT -> ByteCount -> FileOffset -> IO (Either Errno B.ByteString)
+readOp sig url path _ byteCount offset
     | path == testPath = do
-        print ("http://localhost:3000" ++ testPath)
-        (_, s) <- curlGetString ("http://localhost:3000" ++ testPath) []
+        (_, s) <- curlGetString (url ++ testPath) [CurlVerbose True, CurlHttpHeaders ["Authorization: " ++ sig]]
         return $ Right $ B.pack s
-    | path == helloPath =
-        return $ Right $ B.take (fromIntegral byteCount) $ B.drop (fromIntegral offset) helloString
-    | otherwise         = do
+    | otherwise = do
         print path
         return $ Left eNOENT
 

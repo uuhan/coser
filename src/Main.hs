@@ -3,21 +3,21 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Main where
 
-import           Data.Semigroup              ((<>))
-import           Data.Text                   (Text, intercalate)
-import           Data.Version                (versionBranch)
+import           Data.Semigroup            ((<>))
+import           Data.Text                 (Text, intercalate)
+import           Data.Version              (versionBranch)
 import           Data.Word
-import           Options.Applicative         hiding (str)
-import           Protolude                   hiding (intercalate, (<>))
+import           Options.Applicative       hiding (str)
+import           Protolude                 hiding (intercalate, (<>))
 import           System.Fuse
-import           System.Posix.Time           (epochTime)
+import           System.Posix.Time         (epochTime)
 
-import           Com.YS.Store
-import           Com.YS.Store.QCloud         (appSignMulti)
-import           Com.YS.Store.QCloud.FuseOps (qcloudFSOps)
+import           Data.Store
+import           Data.Store.QCloud         (appSignMulti)
+import           Data.Store.QCloud.FuseOps (qcloudFSOps)
 
-import           Paths_store                 (version)
-import           Prelude                     hiding (map, putStrLn, show)
+import           Paths_store               (version)
+import           Prelude                   hiding (map, putStrLn, show)
 
 type HT = ()
 

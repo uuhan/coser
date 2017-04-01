@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Com.YS.Store.QCloud
+module Data.Store.QCloud
     ( appSignMulti
     , appSignOnce
     )

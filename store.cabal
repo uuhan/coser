@@ -55,14 +55,14 @@ library
                           , cbits/util/FileUtil.cpp
                           , cbits/util/true_random.cpp
                           , cbits/util/StringUtil.cpp
-    include-dirs:           cbits
+    include-dirs:           cbits /usr/local/opt/openssl/include
     default-language:       Haskell2010
     ghc-options:            -Wall
-    exposed-modules:        Com.YS.Store
-                          , Com.YS.Store.QCloud
-                          , Com.YS.Store.QCloud.FuseOps
-                          , Com.YS.Store.QCloud.Internal
-                          , Com.YS.Store.Local
+    exposed-modules:        Data.Store
+                          , Data.Store.QCloud
+                          , Data.Store.QCloud.FuseOps
+                          , Data.Store.QCloud.Internal
+                          , Data.Store.Local
     extra-libraries:        stdc++ ssl crypto
     -- pkgconfig-depends:      openssl
     other-modules:          Paths_store
