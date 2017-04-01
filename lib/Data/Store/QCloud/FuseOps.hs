@@ -23,6 +23,7 @@ qcloudFSOps app_id bucket version sig =
     defaultFuseOps { fuseGetFileStat        = getFileStatOp sig op_url
                    , fuseOpen               = openOp
                    , fuseRead               = readOp sig dw_url -- ref @ openOp
+                   , fuseRemoveLink         = rmOp sig op_url -- ref @ openOp
                    , fuseOpenDirectory      = openDirOp
                    , fuseReadDirectory      = readDirOp
                    , fuseGetFileSystemStats = getFileSystemStatsOp
@@ -125,6 +126,10 @@ readOp sig url path _ byteCount offset
     | otherwise = do
         print path
         return $ Left eNOENT
+
+rmOp :: String -> String -> FilePath -> IO Errno
+rmOp sig url path = do
+    undefined
 
 getFileSystemStatsOp :: String -> IO (Either Errno FileSystemStats)
 getFileSystemStatsOp _ = -- str =

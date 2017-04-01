@@ -17,6 +17,7 @@ helloFSOps :: FuseOperations HT
 helloFSOps = defaultFuseOps { fuseGetFileStat        = getFileStatOp
                             , fuseOpen               = openOp
                             , fuseRead               = readOp -- ref @ openOp
+                            , fuseRemoveLink         = rmOp -- remove file
                             , fuseOpenDirectory      = openDirOp
                             , fuseReadDirectory      = readDirOp
                             , fuseGetFileSystemStats = getFileSystemStatsOp
@@ -113,6 +114,9 @@ openOp path mode _ -- flags
                             _        -> return (Left eACCES)
     | otherwise         = return (Left eNOENT)
 
+rmOp :: FilePath -> IO Errno
+rmOp path = do
+    return eOK
 
 readOp :: FilePath -> HT -> ByteCount -> FileOffset -> IO (Either Errno B.ByteString)
 readOp path _ byteCount offset

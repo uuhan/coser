@@ -9,7 +9,7 @@ import           Data.Word
 import           Foreign.C.String
 import           Foreign.C.Types
 
-foreign import ccall unsafe "appSignMulti"
+foreign import ccall "appSignMulti"
     appSignMulti_ ::
             CULong  -- 项目app_id
          -> CString -- 秘钥ID
@@ -18,7 +18,7 @@ foreign import ccall unsafe "appSignMulti"
          -> CString -- 文件所在bucket
          -> IO CString
 
-foreign import ccall unsafe "appSignOnce"
+foreign import ccall "appSignOnce"
     appSignOnce_ ::
             CULong  -- 项目app_id
          -> CString -- 秘钥ID
